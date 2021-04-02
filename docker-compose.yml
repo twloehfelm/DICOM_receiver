@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  air-receiver:
+    build: ./receiver
+    env_file:
+      - .env
+    ports:
+      - "${AIRRECEIVER_PORT}:11112"
+    volumes:
+      - ./receiver/dcmstore:/app/dcmstore
+  
+  staging:
+    build: ./staging
+    env_file:
+      - .env
+    ports:
+      - "${STAGING_PORT}:11112"
+    volumes:
+      - ./staging/instances:/app/instances
+
+  completed:
+    build: ./completed
+    env_file:
+      - .env
+    ports:
+      - "${COMPLETED_PORT}:11112"
+    volumes:
+      - ./completed/instances:/app/instances

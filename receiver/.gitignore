@@ -1,0 +1,5 @@
+.DS_STORE
+dcmstore/processed/**
+dcmstore/queue/**
+dcmstore/received/**
+model_final.pth
