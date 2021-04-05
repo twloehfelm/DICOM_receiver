@@ -114,14 +114,15 @@ def send_dcm(study):
   """
   Send all .dcm files in {study} (recursive) to the remoteAE defined in .env
   """
+  files = [x for x in study.glob('**/*.dcm')]
+
   remoteAE = AE()
   remoteAE.requested_contexts = StoragePresentationContexts
-  assoc = remoteAE.associate(os.environ['STAGING_ADDRESS'], int(os.environ['STAGING_PORT']))
+  assoc = remoteAE.associate('staging', 11112)
   if not assoc.is_established:
     print('Could not establish SCU association')
     return None
 
-  files = [x for x in study.glob('**/*.dcm')]
   for f in files:
     ds = dcmread(f)
     status = assoc.send_c_store(ds)
@@ -172,6 +173,7 @@ algorithm_identification = AlgorithmIdentificationSequence(
   version='v0.1',
   family=codes.cid7162.ArtificialIntelligence
 )
+
 def segment_liver(study_dir):
   path = Path(study_dir)
   series = [x for x in path.iterdir() if x.is_dir()]
@@ -203,12 +205,6 @@ def segment_liver(study_dir):
             masks = [mask.mask for mask in masks]
             if masks:
               mask[num] = np.maximum.reduce(masks)
-        # Describe the algorithm that created the segmentation
-        algorithm_identification = AlgorithmIdentificationSequence(
-          name='liver_seg',
-          version='v0.1',
-          family=codes.cid7162.ArtificialIntelligence
-        )
 
         # Describe the segment
         description_segment_1 = SegmentDescription(
@@ -255,7 +251,9 @@ def segment_liver(study_dir):
         output_path = new/'liverseg.dcm'
         seg_dataset.save_as(output_path)
         send_dcm(output_path.parent)
+
   shutil.rmtree(study_dir, ignore_errors=True)
+  
   try:
     study_dir.parent.rmdir()
   except OSError:
