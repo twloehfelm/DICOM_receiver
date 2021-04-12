@@ -23,7 +23,7 @@ RUN mkdir /app
 WORKDIR /app
 ADD . /app/
 
-# Path updated 2021-03-31 with updated model after round 1
-RUN wget https://www.dropbox.com/s/hrwa7dz81a7cf87/model_final.pth
+# Path updated 2021-04-12 with updated model after round 2
+RUN wget https://www.dropbox.com/s/254a3gdp16zed2v/model_final.pth
 
 CMD ["python", "/app/scp_scu.py"]
