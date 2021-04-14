@@ -192,7 +192,7 @@ def segment_liver(study_dir):
             image_datasets[0].Rows,
             image_datasets[0].Columns
           ),
-          dtype=np.bool
+          dtype=bool
         )
         for num, ds in enumerate(image_datasets):
           im = ds.pixel_array
@@ -264,12 +264,10 @@ def segment_liver(study_dir):
 
 def process_from_queue():
   threading.Timer(300, process_from_queue).start()
-  queue_pts = [x for x in Path('dcmstore/queue').iterdir() if x.is_dir()]
-  for pt in queue_pts:
-    studies = [x for x in pt.iterdir() if x.is_dir()]
-    if len(studies) > 0:
-      segment_liver(studies[0])
-process_from_queue()
+  queue_studies = [x for x in Path('dcmstore/queue/').glob('*/*') if x.is_dir()]
+  for study in queue_studies:
+    segment_liver(study)
+  process_from_queue()
 
 ae.start_server(
   ('', 11112), # Start server on localhost port 11112
