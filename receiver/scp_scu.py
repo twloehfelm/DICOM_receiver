@@ -267,7 +267,8 @@ def process_from_queue():
   queue_studies = [x for x in Path('dcmstore/queue/').glob('*/*') if x.is_dir()]
   for study in queue_studies:
     segment_liver(study)
-  process_from_queue()
+
+process_from_queue()
 
 ae.start_server(
   ('', 11112), # Start server on localhost port 11112
