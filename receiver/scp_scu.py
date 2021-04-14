@@ -236,10 +236,12 @@ def segment_liver(study_dir):
         new = 'dcmstore/processed/LiverSeg'/s.relative_to('dcmstore/queue')
         new.mkdir(parents=True, exist_ok=True)
         try:
-          s.rename(new)
+          # MOVE the SERIES to the PROCESSED folder
+          mergefolders(s, new)
         except FileNotFoundError:
           """Do nothing"""
         try:
+          # Remove the STUDY folder if there are no other SERIES
           s.parent.rmdir()
         except OSError:
           """
@@ -250,7 +252,9 @@ def segment_liver(study_dir):
 
         output_path = new/'liverseg.dcm'
         seg_dataset.save_as(output_path)
-        send_dcm(output_path.parent)
+        
+        # Send each SERIES and SEG to STAGING SCP
+        send_dcm(new)
 
   shutil.rmtree(study_dir, ignore_errors=True)
   
