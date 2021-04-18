@@ -23,8 +23,8 @@ RUN mkdir /app
 WORKDIR /app
 ADD . /app/
 
-# Path updated 2021-04-17 with updated DICOM SEG trainer
-# Total Loss: 0.123
-RUN wget https://www.dropbox.com/s/ertp6muwkzxi5ck/model_final.pth
+# Path updated 2021-04-18 with updated DICOM SEG trainer
+# Total Loss: 0.08907
+RUN wget https://www.dropbox.com/s/gd93lk31i8e77xk/model_final.pth
 
 CMD ["python", "/app/scp_scu.py"]
