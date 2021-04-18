@@ -23,7 +23,8 @@ RUN mkdir /app
 WORKDIR /app
 ADD . /app/
 
-# Path updated 2021-04-12 with updated model after round 2
-RUN wget https://www.dropbox.com/s/254a3gdp16zed2v/model_final.pth
+# Path updated 2021-04-17 with updated DICOM SEG trainer
+# Total Loss: 0.123
+RUN wget https://www.dropbox.com/s/ertp6muwkzxi5ck/model_final.pth
 
 CMD ["python", "/app/scp_scu.py"]
