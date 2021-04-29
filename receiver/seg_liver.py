@@ -26,7 +26,7 @@ class LiverPredictor:
     self.model.eval()
 
     liver_metadata = Metadata()
-    liver_metadata.set(thing_classes = ['liver'])
+    liver_metadata.set(thing_classes = ['left adrenal', 'left kidney', 'liver', 'pancreas', 'right adrenal', 'right kidney', 'spleen'])
     self.metadata = liver_metadata
 
     checkpointer = DetectionCheckpointer(self.model)
@@ -63,7 +63,7 @@ def prepare_predictor():
   # below path applies to current installation location of Detectron2
   cfgFile = "/usr/local/lib/python3.9/site-packages/detectron2/model_zoo/configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
   cfg.merge_from_file(cfgFile)
-  cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.80  # set threshold for this model
+  cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.90  # set threshold for this model
   cfg.MODEL.WEIGHTS = "/app/model_final.pth"
   cfg.MODEL.DEVICE = "cpu"  # we use a CPU Detectron copy
   cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # only has one class (liver)

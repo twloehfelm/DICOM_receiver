@@ -23,7 +23,8 @@ WORKDIR /app
 ADD . /app/
 
 # Path updated 2021-04-18 with updated DICOM SEG trainer
-# Total Loss: 0.08907
-RUN wget https://www.dropbox.com/s/gd93lk31i8e77xk/model_final.pth
+# Total Loss: 0.3968
+# Classes: left adrenal, left kidney, liver, pancreas, right adrenal, right kidney, spleen
+RUN wget https://www.dropbox.com/s/550j3bmqo9b7sae/model_final.pth
 
 CMD ["python", "/app/scp_scu.py"]
