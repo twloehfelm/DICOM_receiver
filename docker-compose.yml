@@ -14,8 +14,8 @@ services:
     # use at least osimis/orthanc:20.12.1
     image: osimis/orthanc
     ports:
-      - "${STAGING_DIMSE}:8042"
-      - "${STAGING_DICOMWEB}:4242"
+      - "${STAGING_DICOMWEB}:8042"
+      - "${STAGING_DIMSE}:4242"
     volumes:
       - ./staging/:/var/lib/orthanc/db/
     environment:
@@ -30,6 +30,7 @@ services:
       DICOM_WEB_PLUGIN_ENABLED: "true"
 
       ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
+      ORTHANC__STONE_WEB_VIEWER__DICOM_WEB_ROOT: "/dicomweb/"
   
       # StoneViewer configurations
       ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
@@ -38,8 +39,8 @@ services:
     # use at least osimis/orthanc:20.12.1
     image: osimis/orthanc
     ports:
-      - "${COMPLETED_DIMSE}:8042"
-      - "${COMPLETED_DICOMWEB}:4242"
+      - "${COMPLETED_DICOMWEB}:8042"
+      - "${COMPLETED_DIMSE}:4242"
     volumes:
       - ./completed/:/var/lib/orthanc/db/
     environment:
@@ -54,6 +55,6 @@ services:
       DICOM_WEB_PLUGIN_ENABLED: "true"
 
       ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
-  
+      ORTHANC__STONE_WEB_VIEWER__DICOM_WEB_ROOT: "/dicomweb/"
       # StoneViewer configurations
       ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
