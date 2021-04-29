@@ -6,24 +6,54 @@ services:
     env_file:
       - .env
     ports:
-      - "${AIRRECEIVER_PORT}:11112"
+      - "${AIRRECEIVER_DIMSE}:11112"
     volumes:
       - ./receiver/dcmstore:/app/dcmstore
   
   staging:
-    build: ./staging
-    env_file:
-      - .env
+    # use at least osimis/orthanc:20.12.1
+    image: osimis/orthanc
     ports:
-      - "${STAGING_PORT}:11112"
+      - "${STAGING_DIMSE}:8042"
+      - "${STAGING_DICOMWEB}:4242"
     volumes:
-      - ./staging/instances:/app/instances
+      - ./staging/:/var/lib/orthanc/db/
+    environment:
+      VERBOSE_STARTUP: "true"
+      VERBOSE_ENABLED: "true"
+  
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
+  
+      # you must enable the StoneViewer and the DicomWeb plugins
+      STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
+      DICOM_WEB_PLUGIN_ENABLED: "true"
 
+      ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
+  
+      # StoneViewer configurations
+      ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
+  
   completed:
-    build: ./completed
-    env_file:
-      - .env
+    # use at least osimis/orthanc:20.12.1
+    image: osimis/orthanc
     ports:
-      - "${COMPLETED_PORT}:11112"
+      - "${COMPLETED_DIMSE}:8042"
+      - "${COMPLETED_DICOMWEB}:4242"
     volumes:
-      - ./completed/instances:/app/instances
+      - ./completed/:/var/lib/orthanc/db/
+    environment:
+      VERBOSE_STARTUP: "true"
+      VERBOSE_ENABLED: "true"
+  
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
+  
+      # you must enable the StoneViewer and the DicomWeb plugins
+      STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
+      DICOM_WEB_PLUGIN_ENABLED: "true"
+
+      ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
+  
+      # StoneViewer configurations
+      ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"

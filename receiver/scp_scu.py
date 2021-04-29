@@ -118,7 +118,7 @@ def send_dcm(study):
 
   remoteAE = AE()
   remoteAE.requested_contexts = StoragePresentationContexts
-  assoc = remoteAE.associate('staging', 11112)
+  assoc = remoteAE.associate('staging', 4242)
   if not assoc.is_established:
     print('Could not establish SCU association')
     return None
