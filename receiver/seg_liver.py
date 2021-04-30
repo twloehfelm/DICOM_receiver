@@ -66,7 +66,7 @@ def prepare_predictor():
   cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.90  # set threshold for this model
   cfg.MODEL.WEIGHTS = "/app/model_final.pth"
   cfg.MODEL.DEVICE = "cpu"  # we use a CPU Detectron copy
-  cfg.MODEL.ROI_HEADS.NUM_CLASSES = 1  # only has one class (liver)
+  cfg.MODEL.ROI_HEADS.NUM_CLASSES = 7  # only has one class (liver)
   cfg.INPUT.FORMAT = "F" #32-bit single channel floating point pixels
   cfg.INPUT.MASK_FORMAT = "bitmask" # Needed to change this from the default "polygons"
 

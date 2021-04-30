@@ -169,11 +169,11 @@ check_studies()
 
 predictor, classes = seg_liver.prepare_predictor()
 algorithm_identification = AlgorithmIdentificationSequence(
-  name='liver_seg',
+  name='dicomseg',
   version='v0.1',
   family=codes.cid7162.ArtificialIntelligence
 )
-
+categories = ['left adrenal', 'left kidney', 'liver', 'pancreas', 'right adrenal', 'right kidney', 'spleen']
 def segment_liver(study_dir):
   path = Path(study_dir)
   series = [x for x in path.iterdir() if x.is_dir()]
@@ -184,57 +184,72 @@ def segment_liver(study_dir):
       series_num = ds.SeriesNumber
       if "ImageType" in ds and all(x in ds.ImageType for x in ["AXIAL", "ORIGINAL", "PRIMARY"]) and "SliceThickness" in ds and ds.SliceThickness >= 3:
         image_datasets = [pydicom.dcmread(str(f)) for f in dcms]
-        # Create a binary segmentation mask
-        # Shape is # slices * rows * columns
-        mask = np.zeros(
-          shape=(
-            len(image_datasets),
-            image_datasets[0].Rows,
-            image_datasets[0].Columns
-          ),
-          dtype=bool
-        )
+
+        mask = {}
+        for c in categories:
+          mask[c] = np.zeros(
+            shape=(
+              len(image_datasets),
+              image_datasets[0].Rows,
+              image_datasets[0].Columns
+            ),
+            dtype=bool
+          )
+
         for num, ds in enumerate(image_datasets):
           im = ds.pixel_array
           im = im * ds.RescaleSlope + ds.RescaleIntercept
           outputs = predictor(im)
           predictions = outputs["instances"].to("cpu")
-          if predictions.has("pred_masks"):
-            masks = np.asarray(predictions.pred_masks)
-            masks = [GenericMask(x, x.shape[0], x.shape[1]) for x in masks]
-            masks = [mask.mask for mask in masks]
-            if masks:
-              mask[num] = np.maximum.reduce(masks)
 
-        # Describe the segment
-        description_segment_1 = SegmentDescription(
-          segment_number=1,
-          segment_label='Liver',
-          segmented_property_category=codes.cid7150.AnatomicalStructure,
-          segmented_property_type=codes.cid7166.Organ,
-          algorithm_type=SegmentAlgorithmTypeValues.AUTOMATIC,
-          algorithm_identification=algorithm_identification,
-          tracking_uid=generate_uid(),
-          tracking_id='liver segmentation'
-        )
+          pred_labels = {x: categories[x] for x in predictions.pred_classes.tolist()}
 
-        # Create the Segmentation instance
-        seg_dataset = Segmentation(
-          source_images=image_datasets,
-          pixel_array=mask,
-          segmentation_type=SegmentationTypeValues.BINARY,
-          segment_descriptions=[description_segment_1],
-          series_instance_uid=generate_uid(),
-          series_number=series_num,
-          sop_instance_uid=generate_uid(),
-          instance_number=1,
-          manufacturer='UC Davis',
-          manufacturer_model_name='Liver Segmentation',
-          software_versions='v0.1',
-          device_serial_number='90210',
-        )
-        new = 'dcmstore/processed/LiverSeg'/s.relative_to('dcmstore/queue')
-        new.mkdir(parents=True, exist_ok=True)
+          for pred_label in pred_labels:
+            organ = pred_labels[pred_label]
+            preds = predictions[predictions.pred_classes == pred_label]
+            if preds.has("pred_masks"):
+              masks = np.asarray(predictions.pred_masks)
+              masks = [GenericMask(x, x.shape[0], x.shape[1]) for x in masks]
+              masks = [mask.mask for mask in masks]
+              if masks:
+                mask[organ][num] = np.maximum.reduce(masks)
+
+        for c in categories:
+          # Describe the segment
+          description_segment_1 = SegmentDescription(
+            segment_number=categories.index(c)+1,
+            segment_label=c,
+            segmented_property_category=codes.cid7150.AnatomicalStructure,
+            segmented_property_type=codes.cid7166.Organ,
+            algorithm_type=SegmentAlgorithmTypeValues.AUTOMATIC,
+            algorithm_identification=algorithm_identification,
+            tracking_uid=generate_uid(),
+            tracking_id='dicomseg segmentation'
+          )
+
+          # Create the Segmentation instance
+          seg_dataset = Segmentation(
+            source_images=image_datasets,
+            pixel_array=mask[c],
+            segmentation_type=SegmentationTypeValues.BINARY,
+            segment_descriptions=[description_segment_1],
+            series_instance_uid=generate_uid(),
+            series_number=series_num,
+            sop_instance_uid=generate_uid(),
+            instance_number=1,
+            manufacturer='UC Davis',
+            manufacturer_model_name='DICOM SEG Segmentation',
+            software_versions='v0.1',
+            device_serial_number='90210',
+          )
+
+          new = 'dcmstore/processed/DICOMSeg'/s.relative_to('dcmstore/queue')
+          new.mkdir(parents=True, exist_ok=True)
+          output_dir = new/'SEGS'
+          output_dir.mkdir(parents=True, exist_ok=True)
+          output_path = output_dir/c.replace(' ','_')+'_seg.dcm'
+          seg_dataset.save_as(output_path)
+
         try:
           # MOVE the SERIES to the PROCESSED folder
           mergefolders(s, new)
@@ -250,11 +265,8 @@ def segment_liver(study_dir):
           all series are processed.
           """
 
-        output_path = new/'liverseg.dcm'
-        seg_dataset.save_as(output_path)
-        
-        # Send each SERIES and SEG to STAGING SCP
-        send_dcm(new)
+    # Send each SERIES and SEG to STAGING SCP
+    send_dcm(new)
 
   shutil.rmtree(study_dir, ignore_errors=True)
   
