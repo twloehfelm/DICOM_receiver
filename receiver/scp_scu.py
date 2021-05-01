@@ -208,47 +208,51 @@ def segment_liver(study_dir):
             organ = pred_labels[pred_label]
             preds = predictions[predictions.pred_classes == pred_label]
             if preds.has("pred_masks"):
-              masks = np.asarray(predictions.pred_masks)
+              masks = np.asarray(preds.pred_masks)
               masks = [GenericMask(x, x.shape[0], x.shape[1]) for x in masks]
               masks = [mask.mask for mask in masks]
-              if masks:
-                mask[organ][num] = np.maximum.reduce(masks)
+              if masks and not np.all((masks == 0)):
+                  mask[organ][num] = np.maximum.reduce(masks)
+        
 
         for c in categories:
-          # Describe the segment
-          description_segment_1 = SegmentDescription(
-            segment_number=categories.index(c)+1,
-            segment_label=c,
-            segmented_property_category=codes.cid7150.AnatomicalStructure,
-            segmented_property_type=codes.cid7166.Organ,
-            algorithm_type=SegmentAlgorithmTypeValues.AUTOMATIC,
-            algorithm_identification=algorithm_identification,
-            tracking_uid=generate_uid(),
-            tracking_id='dicomseg segmentation'
-          )
+          if c in mask and not np.all((mask[c] == False)):
+            # Describe the segment
+            description_segment_1 = SegmentDescription(
+              segment_number=1,
+              segment_label=c,
+              segmented_property_category=codes.cid7150.AnatomicalStructure,
+              segmented_property_type=codes.cid7166.Organ,
+              algorithm_type=SegmentAlgorithmTypeValues.AUTOMATIC,
+              algorithm_identification=algorithm_identification,
+              tracking_uid=generate_uid(),
+              tracking_id='dicomseg segmentation'
+            )
 
-          # Create the Segmentation instance
-          seg_dataset = Segmentation(
-            source_images=image_datasets,
-            pixel_array=mask[c],
-            segmentation_type=SegmentationTypeValues.BINARY,
-            segment_descriptions=[description_segment_1],
-            series_instance_uid=generate_uid(),
-            series_number=series_num,
-            sop_instance_uid=generate_uid(),
-            instance_number=1,
-            manufacturer='UC Davis',
-            manufacturer_model_name='DICOM SEG Segmentation',
-            software_versions='v0.1',
-            device_serial_number='90210',
-          )
+            # Create the Segmentation instance
+            seg_dataset = Segmentation(
+              source_images=image_datasets,
+              pixel_array=mask[c],
+              segmentation_type=SegmentationTypeValues.BINARY,
+              segment_descriptions=[description_segment_1],
+              series_instance_uid=generate_uid(),
+              series_number=series_num,
+              sop_instance_uid=generate_uid(),
+              instance_number=1,
+              manufacturer='UC Davis',
+              manufacturer_model_name='DICOM SEG Segmentation',
+              software_versions='v0.1',
+              device_serial_number='90210',
+            )
 
-          new = 'dcmstore/processed/DICOMSeg'/s.relative_to('dcmstore/queue')
-          new.mkdir(parents=True, exist_ok=True)
-          output_dir = new/'SEGS'
-          output_dir.mkdir(parents=True, exist_ok=True)
-          output_path = output_dir/c.replace(' ','_')+'_seg.dcm'
-          seg_dataset.save_as(output_path)
+            new = 'dcmstore/processed/DICOMSeg'/s.relative_to('dcmstore/queue')
+            new.mkdir(parents=True, exist_ok=True)
+            output_dir = new/'SEGS'
+            output_dir.mkdir(parents=True, exist_ok=True)
+            fn = c.replace(' ', '_')+'_seg.dcm'
+            output_path = output_dir/fn
+            seg_dataset.SeriesDescription = c
+            seg_dataset.save_as(output_path)
 
         try:
           # MOVE the SERIES to the PROCESSED folder
@@ -279,7 +283,7 @@ def segment_liver(study_dir):
     """
 
 def process_from_queue():
-  threading.Timer(300, process_from_queue).start()
+  threading.Timer(120, process_from_queue).start()
   queue_studies = [x for x in Path('dcmstore/queue/').glob('*/*') if x.is_dir()]
   for study in queue_studies:
     segment_liver(study)
