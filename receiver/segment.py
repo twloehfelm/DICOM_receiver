@@ -19,15 +19,16 @@ import torch, torchvision
 from pathlib import Path
 import os
 
-class LiverPredictor:
+class SegmentationPredictor:
   def __init__(self, cfg):
     self.cfg = cfg
     self.model = build_model(self.cfg)
     self.model.eval()
-
-    liver_metadata = Metadata()
-    liver_metadata.set(thing_classes = ['left adrenal', 'left kidney', 'liver', 'pancreas', 'right adrenal', 'right kidney', 'spleen'])
-    self.metadata = liver_metadata
+    
+    thing_classes = os.environ['SEGMENTATIONS'].split(',')
+    segmentation_metadata = Metadata()
+    segmentation_metadata.set(thing_classes = thing_classes)
+    self.metadata = segmentation_metadata
 
     checkpointer = DetectionCheckpointer(self.model)
     checkpointer.load(cfg.MODEL.WEIGHTS)
@@ -66,12 +67,12 @@ def prepare_predictor():
   cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.90  # set threshold for this model
   cfg.MODEL.WEIGHTS = "/app/model_final.pth"
   cfg.MODEL.DEVICE = "cpu"  # we use a CPU Detectron copy
-  cfg.MODEL.ROI_HEADS.NUM_CLASSES = 7  # only has one class (liver)
+  cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(thing_classes)  # must match number of classes
   cfg.INPUT.FORMAT = "F" #32-bit single channel floating point pixels
   cfg.INPUT.MASK_FORMAT = "bitmask" # Needed to change this from the default "polygons"
 
   # create predictor
-  predictor = LiverPredictor(cfg)
+  predictor = SegmentationPredictor(cfg)
   classes = predictor.metadata.thing_classes
 
   return (predictor, classes)

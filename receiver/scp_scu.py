@@ -12,7 +12,7 @@ from pydicom import dcmread
 # Verification class for C-ECHO (https://pydicom.github.io/pynetdicom/stable/examples/verification.html)
 from pynetdicom.sop_class import VerificationSOPClass
 
-import seg_liver
+import segment
 import pydicom
 import numpy as np
 
@@ -46,7 +46,7 @@ last_received_time = {}
 
 Path('dcmstore/received').mkdir(parents= True, exist_ok= True)
 Path('dcmstore/queue').mkdir(parents= True, exist_ok= True)
-Path('dcmstore/processed/LiverSeg').mkdir(parents= True, exist_ok= True)
+Path('dcmstore/processed').mkdir(parents= True, exist_ok= True)
 
 # Preload with any studies left over from prior runs
 received_pts = [x for x in Path('dcmstore/received').iterdir() if x.is_dir()]
@@ -167,14 +167,14 @@ def check_studies():
       """
 check_studies()
 
-predictor, classes = seg_liver.prepare_predictor()
+predictor, classes = segment.prepare_predictor()
 algorithm_identification = AlgorithmIdentificationSequence(
   name='dicomseg',
   version='v0.1',
   family=codes.cid7162.ArtificialIntelligence
 )
 categories = ['left adrenal', 'left kidney', 'liver', 'pancreas', 'right adrenal', 'right kidney', 'spleen']
-def segment_liver(study_dir):
+def segment_study(study_dir):
   path = Path(study_dir)
   series = [x for x in path.iterdir() if x.is_dir()]
   for s in series:
@@ -245,7 +245,7 @@ def segment_liver(study_dir):
               device_serial_number='90210',
             )
 
-            new = 'dcmstore/processed/DICOMSeg'/s.relative_to('dcmstore/queue')
+            new = 'dcmstore/processed'/s.relative_to('dcmstore/queue')
             new.mkdir(parents=True, exist_ok=True)
             output_dir = new/'SEGS'
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -286,7 +286,7 @@ def process_from_queue():
   threading.Timer(120, process_from_queue).start()
   queue_studies = [x for x in Path('dcmstore/queue/').glob('*/*') if x.is_dir()]
   for study in queue_studies:
-    segment_liver(study)
+    segment_study(study)
 
 process_from_queue()
 
