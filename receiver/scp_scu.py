@@ -13,6 +13,8 @@ from pydicom import dcmread
 from pynetdicom.sop_class import VerificationSOPClass
 
 import segment
+from genericanatomycolors import GenericAnatomyColors
+
 import pydicom
 import numpy as np
 
@@ -252,6 +254,11 @@ def segment_study(study_dir):
             fn = c.replace(' ', '_')+'_seg.dcm'
             output_path = output_dir/fn
             seg_dataset.SeriesDescription = c
+            if c in GenericAnatomyColors:
+              dicomLab = GenericAnatomyColors[c]['DicomLab']
+            else:
+              dicomLab = GenericAnatomyColors['tissue']['DicomLab']
+            seg_dataset.SegmentSequence[0].add_new([0x0062, 0x000d], 'US', dicomLab)
             seg_dataset.save_as(output_path)
 
         try:
