@@ -19,13 +19,13 @@ import torch, torchvision
 from pathlib import Path
 import os
 
+thing_classes = os.environ['SEGMENTATIONS'].split(',')
 class SegmentationPredictor:
   def __init__(self, cfg):
     self.cfg = cfg
     self.model = build_model(self.cfg)
     self.model.eval()
     
-    thing_classes = os.environ['SEGMENTATIONS'].split(',')
     segmentation_metadata = Metadata()
     segmentation_metadata.set(thing_classes = thing_classes)
     self.metadata = segmentation_metadata
