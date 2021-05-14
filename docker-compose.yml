@@ -8,7 +8,12 @@ services:
     ports:
       - "${AIRRECEIVER_DIMSE}:11112"
     volumes:
-      - ./receiver/dcmstore:/app/dcmstore
+      - ${AIRRECEIVER_PATH}:/app/dcmstore
+    deploy:
+      resources:
+        limits:
+          cpus: ${AIRRECEIVER_CPUS}
+          memory: ${AIRRECEIVER_MEMORY}
   
   staging:
     # use at least osimis/orthanc:20.12.1
@@ -17,7 +22,7 @@ services:
       - "${STAGING_DICOMWEB}:8042"
       - "${STAGING_DIMSE}:4242"
     volumes:
-      - ./staging/:/var/lib/orthanc/db/
+      - ${STAGING_PATH}:/var/lib/orthanc/db/
     environment:
       VERBOSE_STARTUP: "true"
       VERBOSE_ENABLED: "true"
@@ -42,7 +47,7 @@ services:
       - "${COMPLETED_DICOMWEB}:8042"
       - "${COMPLETED_DIMSE}:4242"
     volumes:
-      - ./completed/:/var/lib/orthanc/db/
+      - ${COMPLETED_PATH}:/var/lib/orthanc/db/
     environment:
       VERBOSE_STARTUP: "true"
       VERBOSE_ENABLED: "true"
