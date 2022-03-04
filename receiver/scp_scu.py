@@ -22,6 +22,7 @@ from pydicom.sr.codedict import codes
 from pydicom.uid import generate_uid
 from highdicom.content import AlgorithmIdentificationSequence
 from highdicom.seg.content import SegmentDescription
+from highdicom.content import PixelMeasuresSequence
 from highdicom.seg.enum import (
   SegmentAlgorithmTypeValues,
   SegmentationTypeValues
@@ -184,6 +185,9 @@ def segment_study(study_dir):
     if len(dcms) > 0:
       ds = pydicom.dcmread(dcms[0])
       series_num = ds.SeriesNumber
+      slice_thickness = ds.SliceThickness
+      pixel_spacing = ds.PixelSpacing
+      pixel_measures = PixelMeasuresSequence(pixel_spacing=pixel_spacing, slice_thickness=slice_thickness, spacing_between_slices=None)
       if "ImageType" in ds and all(x in ds.ImageType for x in ["AXIAL", "ORIGINAL", "PRIMARY"]) and "SliceThickness" in ds and ds.SliceThickness >= 3:
         image_datasets = [pydicom.dcmread(str(f)) for f in dcms]
 
@@ -216,7 +220,6 @@ def segment_study(study_dir):
               if masks and not np.all((masks == 0)):
                   mask[organ][num] = np.maximum.reduce(masks)
         
-
         for c in categories:
           if c in mask and not np.all((mask[c] == False)):
             # Describe the segment
@@ -239,6 +242,7 @@ def segment_study(study_dir):
               segment_descriptions=[description_segment_1],
               series_instance_uid=generate_uid(),
               series_number=series_num,
+              pixel_measures=pixel_measures,
               sop_instance_uid=generate_uid(),
               instance_number=1,
               manufacturer='UC Davis',
