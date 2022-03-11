@@ -5,11 +5,13 @@ RUN apt-get update -y &&  apt-get install -y apt-transport-https
 RUN apt-get -y install nano git build-essential libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1-mesa-dev wget -y
 
 # Detectron2 prerequisites
-RUN pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 -f https://download.pytorch.org/whl/torch_stable.html
+#RUN pip install --user tensorboard cmake   # cmake from apt-get is too old
+RUN pip install torch==1.10 torchvision==0.11.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+#RUN pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install cython
 RUN pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 
-RUN pip install pydicom highdicom pynetdicom
+RUN pip install pydicom==2.2.2 highdicom==0.15.1 pynetdicom==2.0.1
 
 # Detectron2
 # RUN python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu110/torch1.7/index.html

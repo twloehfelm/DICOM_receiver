@@ -10,7 +10,7 @@ from pynetdicom import (
 from pydicom import dcmread
 
 # Verification class for C-ECHO (https://pydicom.github.io/pynetdicom/stable/examples/verification.html)
-from pynetdicom.sop_class import VerificationSOPClass
+from pynetdicom.sop_class import Verification
 
 import segment
 from genericanatomycolors import GenericAnatomyColors
@@ -38,7 +38,7 @@ storage_sop_classes = [
 for uid in storage_sop_classes:
   ae.add_supported_context(uid, ALL_TRANSFER_SYNTAXES)
 
-ae.add_supported_context(VerificationSOPClass)
+ae.add_supported_context(Verification)
 
 """
 dict with
@@ -219,7 +219,7 @@ def segment_study(study_dir):
               masks = [mask.mask for mask in masks]
               if masks and not np.all((masks == 0)):
                   mask[organ][num] = np.maximum.reduce(masks)
-        
+
         for c in categories:
           if c in mask and not np.all((mask[c] == False)):
             # Describe the segment
@@ -284,7 +284,7 @@ def segment_study(study_dir):
     send_dcm(new)
 
   shutil.rmtree(study_dir, ignore_errors=True)
-  
+
   try:
     study_dir.parent.rmdir()
   except OSError:

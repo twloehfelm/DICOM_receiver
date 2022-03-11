@@ -14,7 +14,7 @@ services:
         limits:
           cpus: ${AIRRECEIVER_CPUS}
           memory: ${AIRRECEIVER_MEMORY}
-  
+
   staging:
     # use at least osimis/orthanc:20.12.1
     image: osimis/orthanc
@@ -26,20 +26,25 @@ services:
     environment:
       VERBOSE_STARTUP: "true"
       VERBOSE_ENABLED: "true"
-  
+
       ORTHANC__AUTHENTICATION_ENABLED: "false"
       ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
-  
+      ORTHANC__DICOM_CHECK_MODALITY_HOST: "false"
+      ORTHANC__DICOM_CHECK_CALLED_AET: "false"
+      ORTHANC__DICOM_ALWAYS_ALLOW_GET: "true"
+      ORTHANC__DICOM_ALWAYS_ALLOW_MOVE: "true"
+      ORTHANC__DICOM_ALWAYS_ALLOW_FIND: "true"
+
       # you must enable the StoneViewer and the DicomWeb plugins
       STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
       DICOM_WEB_PLUGIN_ENABLED: "true"
 
       ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
       ORTHANC__STONE_WEB_VIEWER__DICOM_WEB_ROOT: "/dicomweb/"
-  
+
       # StoneViewer configurations
       ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
-  
+
   completed:
     # use at least osimis/orthanc:20.12.1
     image: osimis/orthanc
@@ -51,10 +56,10 @@ services:
     environment:
       VERBOSE_STARTUP: "true"
       VERBOSE_ENABLED: "true"
-  
+
       ORTHANC__AUTHENTICATION_ENABLED: "false"
       ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
-  
+
       # you must enable the StoneViewer and the DicomWeb plugins
       STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
       DICOM_WEB_PLUGIN_ENABLED: "true"
@@ -64,29 +69,29 @@ services:
       # StoneViewer configurations
       ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
 
-  netdata:
-    image: netdata/netdata
-    container_name: netdata
-    hostname: "${HOSTNAME}" # set to fqdn of host
-    ports:
-      - "${NETDATA_PORT}:19999"
-    restart: unless-stopped
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - apparmor:unconfined
-    volumes:
-      - netdataconfig:/etc/netdata
-      - netdatalib:/var/lib/netdata
-      - netdatacache:/var/cache/netdata
-      - /etc/passwd:/host/etc/passwd:ro
-      - /etc/group:/host/etc/group:ro
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /etc/os-release:/host/etc/os-release:ro
+  # netdata:
+  #   image: netdata/netdata
+  #   container_name: netdata
+  #   hostname: "${HOSTNAME}" # set to fqdn of host
+  #   ports:
+  #     - "${NETDATA_PORT}:19999"
+  #   restart: unless-stopped
+  #   cap_add:
+  #     - SYS_PTRACE
+  #   security_opt:
+  #     - apparmor:unconfined
+  #   volumes:
+  #     - netdataconfig:/etc/netdata
+  #     - netdatalib:/var/lib/netdata
+  #     - netdatacache:/var/cache/netdata
+  #     - /etc/passwd:/host/etc/passwd:ro
+  #     - /etc/group:/host/etc/group:ro
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /etc/os-release:/host/etc/os-release:ro
 
-volumes:
-  netdataconfig:
-  netdatalib:
-  netdatacache:
-      
+# volumes:
+#   netdataconfig:
+#   netdatalib:
+#   netdatacache:
+
