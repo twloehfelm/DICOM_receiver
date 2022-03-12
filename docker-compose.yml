@@ -59,6 +59,11 @@ services:
 
       ORTHANC__AUTHENTICATION_ENABLED: "false"
       ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
+      ORTHANC__DICOM_CHECK_MODALITY_HOST: "false"
+      ORTHANC__DICOM_CHECK_CALLED_AET: "false"
+      ORTHANC__DICOM_ALWAYS_ALLOW_GET: "true"
+      ORTHANC__DICOM_ALWAYS_ALLOW_MOVE: "true"
+      ORTHANC__DICOM_ALWAYS_ALLOW_FIND: "true"
 
       # you must enable the StoneViewer and the DicomWeb plugins
       STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
