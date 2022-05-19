@@ -15,65 +15,6 @@ services:
           cpus: ${AIRRECEIVER_CPUS}
           memory: ${AIRRECEIVER_MEMORY}
 
-  staging:
-    # use at least osimis/orthanc:20.12.1
-    image: osimis/orthanc
-    ports:
-      - "${STAGING_DICOMWEB}:8042"
-      - "${STAGING_DIMSE}:4242"
-    volumes:
-      - ${STAGING_PATH}:/var/lib/orthanc/db/
-    environment:
-      VERBOSE_STARTUP: "true"
-      VERBOSE_ENABLED: "true"
-
-      ORTHANC__AUTHENTICATION_ENABLED: "false"
-      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
-      ORTHANC__DICOM_CHECK_MODALITY_HOST: "false"
-      ORTHANC__DICOM_CHECK_CALLED_AET: "false"
-      ORTHANC__DICOM_ALWAYS_ALLOW_GET: "true"
-      ORTHANC__DICOM_ALWAYS_ALLOW_MOVE: "true"
-      ORTHANC__DICOM_ALWAYS_ALLOW_FIND: "true"
-
-      # you must enable the StoneViewer and the DicomWeb plugins
-      STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
-      DICOM_WEB_PLUGIN_ENABLED: "true"
-
-      ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
-      ORTHANC__STONE_WEB_VIEWER__DICOM_WEB_ROOT: "/dicomweb/"
-
-      # StoneViewer configurations
-      ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
-
-  completed:
-    # use at least osimis/orthanc:20.12.1
-    image: osimis/orthanc
-    ports:
-      - "${COMPLETED_DICOMWEB}:8042"
-      - "${COMPLETED_DIMSE}:4242"
-    volumes:
-      - ${COMPLETED_PATH}:/var/lib/orthanc/db/
-    environment:
-      VERBOSE_STARTUP: "true"
-      VERBOSE_ENABLED: "true"
-
-      ORTHANC__AUTHENTICATION_ENABLED: "false"
-      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
-      ORTHANC__DICOM_CHECK_MODALITY_HOST: "false"
-      ORTHANC__DICOM_CHECK_CALLED_AET: "false"
-      ORTHANC__DICOM_ALWAYS_ALLOW_GET: "true"
-      ORTHANC__DICOM_ALWAYS_ALLOW_MOVE: "true"
-      ORTHANC__DICOM_ALWAYS_ALLOW_FIND: "true"
-
-      # you must enable the StoneViewer and the DicomWeb plugins
-      STONE_WEB_VIEWER_PLUGIN_ENABLED: "true"
-      DICOM_WEB_PLUGIN_ENABLED: "true"
-
-      ORTHANC__DICOM_WEB__ROOT: "/dicomweb/"
-      ORTHANC__STONE_WEB_VIEWER__DICOM_WEB_ROOT: "/dicomweb/"
-      # StoneViewer configurations
-      ORTHANC__STONE_WEB_VIEWER__DATE_FORMAT: "YYYY-MM-DD"
-
   netdata:
     image: netdata/netdata
     container_name: netdata

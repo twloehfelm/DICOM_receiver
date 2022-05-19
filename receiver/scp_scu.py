@@ -12,23 +12,11 @@ from pydicom import dcmread
 # Verification class for C-ECHO (https://pydicom.github.io/pynetdicom/stable/examples/verification.html)
 from pynetdicom.sop_class import Verification
 
-import segment
-from genericanatomycolors import GenericAnatomyColors
-
 import pydicom
 import numpy as np
 
 from pydicom.sr.codedict import codes
 from pydicom.uid import generate_uid
-from highdicom.content import AlgorithmIdentificationSequence
-from highdicom.seg.content import SegmentDescription
-from highdicom.content import PixelMeasuresSequence
-from highdicom.seg.enum import (
-    SegmentAlgorithmTypeValues,
-    SegmentationTypeValues
-)
-from highdicom.seg.sop import Segmentation
-from detectron2.utils.visualizer import GenericMask
 
 ae = AE()
 # Accept storage of all SOP classes
@@ -119,31 +107,6 @@ def handle_store(event, storage_dir):
     return 0x0000
 
 
-def send_dcm(study):
-    """
-    Send all .dcm files in {study} (recursive) to the remoteAE defined in .env
-    """
-    files = [x for x in study.glob('**/*.dcm')]
-
-    remoteAE = AE()
-    remoteAE.requested_contexts = StoragePresentationContexts
-    assoc = remoteAE.associate('staging', 4242)
-    if not assoc.is_established:
-        print('Could not establish SCU association')
-        return None
-
-    for f in files:
-        ds = dcmread(f)
-        status = assoc.send_c_store(ds)
-        if status:
-            # If the storage request succeeded this will be 0x0000
-            print('C-STORE request status: 0x{0:04x}'.format(status.Status))
-        else:
-            print('Connection timed out, was aborted or received invalid response')
-
-    assoc.release()
-
-
 # List of event handlers
 handlers = [
     (evt.EVT_C_STORE, handle_store, [Path('dcmstore/received')]),
@@ -180,151 +143,6 @@ def check_studies():
 
 
 check_studies()
-
-predictor, classes = segment.prepare_predictor()
-algorithm_identification = AlgorithmIdentificationSequence(
-    name='dicomseg',
-    version='v0.1',
-    family=codes.cid7162.ArtificialIntelligence
-)
-categories = ['left adrenal', 'left kidney', 'liver',
-              'pancreas', 'right adrenal', 'right kidney', 'spleen']
-
-
-def segment_study(study_dir):
-    path = Path(study_dir)
-    series = [x for x in path.iterdir() if x.is_dir()]
-    for s in series:
-        dcms = list(s.glob('*.dcm'))
-        if len(dcms) > 0:
-            ds = pydicom.dcmread(dcms[0])
-            series_num = ds.SeriesNumber
-            if "SliceThickness" in ds and "PixelSpacing" in ds:
-                slice_thickness = ds.SliceThickness
-                pixel_spacing = ds.PixelSpacing
-                pixel_measures = PixelMeasuresSequence(
-                    pixel_spacing=pixel_spacing, slice_thickness=slice_thickness, spacing_between_slices=None)
-                if "ImageType" in ds and all(x in ds.ImageType for x in ["AXIAL", "ORIGINAL", "PRIMARY"]) and "SliceThickness" in ds and ds.SliceThickness >= 3:
-                    image_datasets = [pydicom.dcmread(str(f)) for f in dcms]
-
-                    mask = {}
-                    for c in categories:
-                        mask[c] = np.zeros(
-                            shape=(
-                                len(image_datasets),
-                                image_datasets[0].Rows,
-                                image_datasets[0].Columns
-                            ),
-                            dtype=bool
-                        )
-
-                    for num, ds in enumerate(image_datasets):
-                        im = ds.pixel_array
-                        im = im * ds.RescaleSlope + ds.RescaleIntercept
-                        outputs = predictor(im)
-                        predictions = outputs["instances"].to("cpu")
-
-                        pred_labels = {x: categories[x]
-                                       for x in predictions.pred_classes.tolist()}
-
-                        for pred_label in pred_labels:
-                            organ = pred_labels[pred_label]
-                            preds = predictions[predictions.pred_classes == pred_label]
-                            if preds.has("pred_masks"):
-                                masks = np.asarray(preds.pred_masks)
-                                masks = [GenericMask(
-                                    x, x.shape[0], x.shape[1]) for x in masks]
-                                masks = [mask.mask for mask in masks]
-                                if masks and not np.all((masks == 0)):
-                                    mask[organ][num] = np.maximum.reduce(masks)
-
-                    for c in categories:
-                        if c in mask and not np.all((mask[c] == False)):
-                            # Describe the segment
-                            description_segment_1 = SegmentDescription(
-                                segment_number=1,
-                                segment_label=c,
-                                segmented_property_category=codes.cid7150.AnatomicalStructure,
-                                segmented_property_type=codes.cid7166.Organ,
-                                algorithm_type=SegmentAlgorithmTypeValues.AUTOMATIC,
-                                algorithm_identification=algorithm_identification,
-                                tracking_uid=generate_uid(),
-                                tracking_id='dicomseg segmentation'
-                            )
-
-                            # Create the Segmentation instance
-                            seg_dataset = Segmentation(
-                                source_images=image_datasets,
-                                pixel_array=mask[c],
-                                segmentation_type=SegmentationTypeValues.BINARY,
-                                segment_descriptions=[description_segment_1],
-                                series_instance_uid=generate_uid(),
-                                series_number=series_num,
-                                pixel_measures=pixel_measures,
-                                sop_instance_uid=generate_uid(),
-                                instance_number=1,
-                                manufacturer='UC Davis',
-                                manufacturer_model_name='DICOM SEG Segmentation',
-                                software_versions='v0.1',
-                                device_serial_number='90210',
-                            )
-
-                            new = 'dcmstore/processed' / \
-                                s.relative_to('dcmstore/queue')
-                            new.mkdir(parents=True, exist_ok=True)
-                            output_dir = new/'SEGS'
-                            output_dir.mkdir(parents=True, exist_ok=True)
-                            fn = c.replace(' ', '_')+'_seg.dcm'
-                            output_path = output_dir/fn
-                            seg_dataset.SeriesDescription = c
-                            if c in GenericAnatomyColors:
-                                dicomLab = GenericAnatomyColors[c]['DicomLab']
-                            else:
-                                dicomLab = GenericAnatomyColors['tissue']['DicomLab']
-                            seg_dataset.SegmentSequence[0].add_new(
-                                [0x0062, 0x000d], 'US', dicomLab)
-                            seg_dataset.save_as(output_path)
-
-                    try:
-                        # MOVE the SERIES to the PROCESSED folder
-                        mergefolders(s, new)
-                    except FileNotFoundError:
-                        """Do nothing"""
-                    try:
-                        # Remove the STUDY folder if there are no other SERIES
-                        s.parent.rmdir()
-                    except OSError:
-                        """
-                        Dir not empty. Do nothing. There are other series in the pt jacket
-                        and some may be segmented too. Will clear folder from queue after
-                        all series are processed.
-                        """
-                    # Send each SERIES and SEG to STAGING SCP
-                    try:
-                        send_dcm(new)
-                    except UnboundLocalError:
-                        """New var not set yet - do nothing"""
-
-    shutil.rmtree(study_dir, ignore_errors=True)
-
-    try:
-        study_dir.parent.rmdir()
-    except OSError:
-        """
-        Dir not empty. Do nothing. Patient has other exams than need to be
-        segmented.
-        """
-
-
-def process_from_queue():
-    threading.Timer(120, process_from_queue).start()
-    queue_studies = [x for x in Path(
-        'dcmstore/queue/').glob('*/*') if x.is_dir()]
-    for study in queue_studies:
-        segment_study(study)
-
-
-process_from_queue()
 
 ae.start_server(
     ('', 11112),  # Start server on localhost port 11112
