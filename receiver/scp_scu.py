@@ -135,8 +135,10 @@ def check_studies():
 
     for old in stale_studies:
         if os.environ['archive_to'] == 's3':
-            s3_client.upload_file(
-                old, bucket, old.relative_to('dcmstore/received'))
+            files = [x for x in old.rglob('*') if x.is_file()]
+            for f in files:
+                s3_client.upload_file(
+                    str(f), bucket, str(f.relative_to('dcmstore/received')))
         else:
             new = 'dcmstore/queue'/old.relative_to('dcmstore/received')
             mergefolders(old, new)
