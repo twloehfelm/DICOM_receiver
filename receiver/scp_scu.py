@@ -14,6 +14,7 @@ from pynetdicom.sop_class import Verification
 
 import pydicom
 import numpy as np
+import boto3
 
 from pydicom.sr.codedict import codes
 from pydicom.uid import generate_uid
@@ -128,9 +129,17 @@ def check_studies():
     threading.Timer(60.0, check_studies).start()
     stale_studies = [s for s in last_received_time if (
         datetime.now() - last_received_time[s]).total_seconds() >= 120]
+
+    s3_client = boto3.client('s3')
+    bucket = os.environ['s3_bucket']
+
     for old in stale_studies:
-        new = 'dcmstore/queue'/old.relative_to('dcmstore/received')
-        mergefolders(old, new)
+        if os.environ['archive_to'] == 's3':
+            s3_client.upload_file(
+                old, bucket, old.relative_to('dcmstore/received'))
+        else:
+            new = 'dcmstore/queue'/old.relative_to('dcmstore/received')
+            mergefolders(old, new)
         shutil.rmtree(old)
         last_received_time.pop(old)
         try:
