@@ -9,6 +9,7 @@ services:
       - "${AIRRECEIVER_DIMSE}:11112"
     volumes:
       - ${AIRRECEIVER_PATH}:/app/dcmstore
+      - ./logs:/app/logs
     deploy:
       resources:
         limits:

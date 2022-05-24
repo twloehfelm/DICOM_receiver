@@ -19,6 +19,8 @@ import boto3
 from pydicom.sr.codedict import codes
 from pydicom.uid import generate_uid
 
+logsdir = Path('/app/logs')
+
 ae = AE()
 # Accept storage of all SOP classes
 storage_sop_classes = [
@@ -98,6 +100,10 @@ def handle_store(event, storage_dir):
         # Unable to create output dir, return failure status
         return 0xC001
 
+    with open(logsdir/'received.log', 'a+') as f:
+        f.write(datetime.now() + ',' + ds.PatientID, + ',' +
+                ds.AccessionNumber + ',' + save_loc + ',' + ds.SOPInstanceUID + '\n')
+
     save_loc = save_loc/ds.SOPInstanceUID
     # Because SOPInstanceUID includes several '.' you can't just use
     #   with_suffix or else it will replaces the portion of the UID that follows
@@ -137,9 +143,15 @@ def check_studies():
         if os.environ['archive_to'] == 's3':
             files = [x for x in old.rglob('*') if x.is_file()]
             for f in files:
-                s3_client.upload_file(
-                    str(f), bucket, str(f.relative_to('dcmstore/received')))
+                with open(logsdir/'s3_archived.log', 'a+') as f:
+                    f.write(datetime.now() + ',' +
+                            str(f.relative_to('dcmstore/received')) + '\n')
+                s3_client.upload_file(str(f), bucket, str(
+                    f.relative_to('dcmstore/received')))
         else:
+            with open(logsdir/'local_queue_archived.log', 'a+') as f:
+                f.write(datetime.now() + ',' +
+                        old.relative_to('dcmstore/received') + '\n')
             new = 'dcmstore/queue'/old.relative_to('dcmstore/received')
             mergefolders(old, new)
         shutil.rmtree(old)
