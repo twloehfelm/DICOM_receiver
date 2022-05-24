@@ -101,7 +101,7 @@ def handle_store(event, storage_dir):
         return 0xC001
 
     with open(logsdir/'received.log', 'a+') as f:
-        f.write(str(datetime.now()) + ',' + str(ds.PatientID), + ',' +
+        f.write(str(datetime.now()) + ',' + str(ds.PatientID) + ',' +
                 str(ds.AccessionNumber) + ',' + str(save_loc) + ',' + str(ds.SOPInstanceUID) + '\n')
 
     save_loc = save_loc/ds.SOPInstanceUID
@@ -151,7 +151,7 @@ def check_studies():
         else:
             with open(logsdir/'local_queue_archived.log', 'a+') as f:
                 f.write(str(datetime.now()) + ',' +
-                        old.relative_to('dcmstore/received') + '\n')
+                        str(old.relative_to('dcmstore/received')) + '\n')
             new = 'dcmstore/queue'/old.relative_to('dcmstore/received')
             mergefolders(old, new)
         shutil.rmtree(old)
