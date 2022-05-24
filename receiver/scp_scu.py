@@ -143,14 +143,14 @@ def check_studies():
         if os.environ['archive_to'] == 's3':
             files = [x for x in old.rglob('*') if x.is_file()]
             for f in files:
-                with open(logsdir/'s3_archived.log', 'a+') as f:
-                    f.write(str(datetime.now()) + ',' +
+                with open(logsdir/'s3_archived.log', 'a+') as l:
+                    l.write(str(datetime.now()) + ',' +
                             str(f.relative_to('dcmstore/received')) + '\n')
                 s3_client.upload_file(str(f), bucket, str(
                     f.relative_to('dcmstore/received')))
         else:
-            with open(logsdir/'local_queue_archived.log', 'a+') as f:
-                f.write(str(datetime.now()) + ',' +
+            with open(logsdir/'local_queue_archived.log', 'a+') as l:
+                l.write(str(datetime.now()) + ',' +
                         str(old.relative_to('dcmstore/received')) + '\n')
             new = 'dcmstore/queue'/old.relative_to('dcmstore/received')
             mergefolders(old, new)
